@@ -2,16 +2,28 @@ package ac.cn.saya.flink.sink;
 
 import ac.cn.saya.flink.entity.SensorReading;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchSinkFunction;
+import org.apache.flink.streaming.connectors.elasticsearch.RequestIndexer;
+import org.apache.flink.streaming.connectors.elasticsearch6.ElasticsearchSink;
 import org.apache.flink.streaming.connectors.redis.RedisSink;
 import org.apache.flink.streaming.connectors.redis.common.config.FlinkJedisPoolConfig;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommand;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommandDescription;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisMapper;
+import org.apache.http.HttpHost;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.client.Requests;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * @Title: Sink_Redis
+ * @Title: Sink_ElasticSearch
  * @ProjectName flink-util
  * @Description: TODO
  * @Author saya
@@ -19,7 +31,7 @@ import org.apache.flink.streaming.connectors.redis.common.mapper.RedisMapper;
  * @Description:
  */
 
-public class Sink_Redis{
+public class Sink_ElasticSearch{
 
     public static void main(String[] args) throws Exception {
         // 创建执行环境
@@ -36,10 +48,11 @@ public class Sink_Redis{
             }
         });
 
-        // Redis 连接池
-        FlinkJedisPoolConfig config = new FlinkJedisPoolConfig.Builder().setHost("127.0.0.1").setPort(6379).build();
+        // es 的 配置信息
+        List<HttpHost> httpHosts = new ArrayList<>();
+        httpHosts.add(new HttpHost("127.0.0.1",9200));
         // 通过sink写入到redis
-        dataStream.addSink(new RedisSink<SensorReading>(config,new DiyRedisMapper()));
+        dataStream.addSink(new ElasticsearchSink.Builder<SensorReading>(httpHosts,new DiyElasticsearchSinkFunction()).build());
 
         // 提交执行
         env.execute();
@@ -47,21 +60,14 @@ public class Sink_Redis{
 
 }
 
-class DiyRedisMapper implements RedisMapper<SensorReading>{
-
-    // 保存到redis的命令，存成hash表
+class DiyElasticsearchSinkFunction implements ElasticsearchSinkFunction<SensorReading> {
     @Override
-    public RedisCommandDescription getCommandDescription() {
-        return new RedisCommandDescription(RedisCommand.HSET,"sensor_temper");
-    }
-
-    @Override
-    public String getKeyFromData(SensorReading data) {
-        return data.getId();
-    }
-
-    @Override
-    public String getValueFromData(SensorReading data) {
-        return data.getTemperature().toString();
+    public void process(SensorReading sensorReading, RuntimeContext runtimeContext, RequestIndexer requestIndexer) {
+        Map<String, String> dataSource = new HashMap<>();
+        dataSource.put("id",sensorReading.getId());
+        dataSource.put("timestamp",sensorReading.getTimestamp().toString());
+        dataSource.put("temperature",sensorReading.getTemperature().toString());
+        IndexRequest indexRequest = Requests.indexRequest().index("sensor").type("readingData").source(dataSource);
+        requestIndexer.add(indexRequest);
     }
 }

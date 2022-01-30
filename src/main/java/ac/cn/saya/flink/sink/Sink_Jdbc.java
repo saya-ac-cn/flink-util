@@ -2,16 +2,22 @@ package ac.cn.saya.flink.sink;
 
 import ac.cn.saya.flink.entity.SensorReading;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.streaming.connectors.redis.RedisSink;
 import org.apache.flink.streaming.connectors.redis.common.config.FlinkJedisPoolConfig;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommand;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommandDescription;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisMapper;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+
 /**
- * @Title: Sink_Redis
+ * @Title: Sink_Jdbc
  * @ProjectName flink-util
  * @Description: TODO
  * @Author saya
@@ -19,7 +25,7 @@ import org.apache.flink.streaming.connectors.redis.common.mapper.RedisMapper;
  * @Description:
  */
 
-public class Sink_Redis{
+public class Sink_Jdbc{
 
     public static void main(String[] args) throws Exception {
         // 创建执行环境
@@ -39,7 +45,7 @@ public class Sink_Redis{
         // Redis 连接池
         FlinkJedisPoolConfig config = new FlinkJedisPoolConfig.Builder().setHost("127.0.0.1").setPort(6379).build();
         // 通过sink写入到redis
-        dataStream.addSink(new RedisSink<SensorReading>(config,new DiyRedisMapper()));
+        dataStream.addSink(new DiyJdbcMapper());
 
         // 提交执行
         env.execute();
@@ -47,21 +53,40 @@ public class Sink_Redis{
 
 }
 
-class DiyRedisMapper implements RedisMapper<SensorReading>{
+class DiyJdbcMapper extends RichSinkFunction<SensorReading> {
 
-    // 保存到redis的命令，存成hash表
+    Connection conn = null;
+    PreparedStatement insertStmt = null;
+    PreparedStatement updateStmt = null;
+
     @Override
-    public RedisCommandDescription getCommandDescription() {
-        return new RedisCommandDescription(RedisCommand.HSET,"sensor_temper");
+    public void invoke(SensorReading value, Context context) throws Exception {
+        // 调用连接执行sql
+        updateStmt.setDouble(1,value.getTemperature());
+        updateStmt.setString(2, value.getId());
+        updateStmt.execute();
+        // 如果刚刚执行修改的影响行数为0，那么说明数据没有，需要执行一次添加操作
+        if (updateStmt.getUpdateCount() == 0){
+            insertStmt.setString(1, value.getId());
+            insertStmt.setDouble(2,value.getTemperature());
+            insertStmt.execute();
+        }
     }
 
     @Override
-    public String getKeyFromData(SensorReading data) {
-        return data.getId();
+    public void open(Configuration parameters) throws Exception {
+        // 用于建立数据库库的连接
+        conn = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/test","root","123456");
+        // 创建SQL预编译
+        insertStmt = conn.prepareStatement("insert into sensor_temp(`id`,`temp`) valuse (?,?)");
+        updateStmt = conn.prepareStatement("update sensor_temp set `temp` = ? where `id` = ?");
     }
 
     @Override
-    public String getValueFromData(SensorReading data) {
-        return data.getTemperature().toString();
+    public void close() throws Exception {
+        // 释放连接资源
+        insertStmt.close();
+        updateStmt.close();
+        conn.close();
     }
 }
