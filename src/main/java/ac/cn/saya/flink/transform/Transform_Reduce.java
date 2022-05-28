@@ -32,7 +32,7 @@ public class Transform_Reduce {
                 return new SensorReading(fileds[0],Long.parseLong(fileds[1]),Double.parseDouble(fileds[2]));
             }
         });
-        // 分组
+        // 分组（只是逻辑上的分区），最后形成按键分区流
         KeyedStream<SensorReading, Tuple> keyedStream = dataStream.keyBy("id");
         // reduce聚合，取最大的温度值，以及当前最新的时间戳
         DataStream<SensorReading> resultStream = keyedStream.reduce((lastVal,currentVal)-> new SensorReading(lastVal.getId(),currentVal.getTimestamp(),Math.max(lastVal.getTemperature(), currentVal.getTemperature())));

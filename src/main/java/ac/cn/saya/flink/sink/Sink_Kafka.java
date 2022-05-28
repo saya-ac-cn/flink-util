@@ -5,6 +5,7 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer011;
 
 /**
@@ -33,7 +34,7 @@ public class Sink_Kafka{
             }
         });
 
-        dataStream.addSink(new FlinkKafkaProducer011<String>("127.0.0.1:9092","sinktest",new SimpleStringSchema()));
+        dataStream.addSink(new FlinkKafkaProducer<String>("127.0.0.1:9092","sinktest",new SimpleStringSchema()));
     }
 
 }

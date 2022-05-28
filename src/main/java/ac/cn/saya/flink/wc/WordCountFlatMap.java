@@ -14,6 +14,13 @@ import org.apache.flink.util.Collector;
  */
 
 public class WordCountFlatMap implements FlatMapFunction<String, Tuple2<String,Integer>> {
+
+    /**
+     *
+     * @param line 每行数据
+     * @param collector 处理后的收集器
+     * @throws Exception
+     */
     @Override
     public void flatMap(String line, Collector<Tuple2<String, Integer>> collector) throws Exception {
         // 按照空格进行分词

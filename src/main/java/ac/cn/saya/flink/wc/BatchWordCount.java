@@ -1,7 +1,10 @@
 package ac.cn.saya.flink.wc;
 
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.operators.FlatMapOperator;
+import org.apache.flink.api.java.operators.UnsortedGrouping;
 import org.apache.flink.api.java.tuple.Tuple2;
 
 /**
@@ -17,16 +20,17 @@ import org.apache.flink.api.java.tuple.Tuple2;
 public class BatchWordCount {
 
     public static void main(String[] args) throws Exception {
-        // 创建执行环境
+        // 1、创建执行环境
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         String inputPath = "/Users/saya/project/java/flink-util/src/main/resources/wc-sample.txt";
-        // 从文件中读取数据
+        // 2、从文件中读取数据（每一行）
         DataSet<String> dataSource = env.readTextFile(inputPath);
-        DataSet<Tuple2<String, Integer>> dataResult = dataSource.flatMap(new WordCountFlatMap())
-                // 按照元组中第一个位置进行分组
-                .groupBy(0)
-                // 把元组中第2个位置的数做相加操作
-                .sum(1);
+        // 3、将每行的数据进行分词，转换成二元组类型
+        final FlatMapOperator<String, Tuple2<String, Integer>> wordAndOneTupe = dataSource.flatMap(new WordCountFlatMap()).returns(Types.TUPLE(Types.STRING, Types.INT));
+        // 按照元组中第一个位置进行分组
+        final UnsortedGrouping<Tuple2<String, Integer>> wordAndOneGroup = wordAndOneTupe.groupBy(0);
+        // 分组内进行聚合统计
+        DataSet<Tuple2<String, Integer>> dataResult = wordAndOneGroup.sum(1);
         dataResult.print();
     }
 

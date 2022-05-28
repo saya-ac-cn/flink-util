@@ -3,7 +3,7 @@ package ac.cn.saya.flink.source;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer011;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 
 import java.util.Properties;
 
@@ -24,7 +24,7 @@ public class SourceTest_Kafka{
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         // kafka的相关属性配置
         Properties properties = new Properties();
-        properties.setProperty("bootstrap.servers", "localhost:9092");
+        properties.setProperty("bootstrap.servers", "10.203.2.92:9092,10.203.2.93:9092,10.203.2.94:9092");
         properties.setProperty("group.id", "consumer-group");
         properties.setProperty("key.deserializer",
                 "org.apache.kafka.common.serialization.StringDeserializer");
@@ -32,7 +32,7 @@ public class SourceTest_Kafka{
                 "org.apache.kafka.common.serialization.StringDeserializer");
         properties.setProperty("auto.offset.reset", "latest");
         // 从kafka中进行读取
-        DataStream<String> sourceStream = env.addSource(new FlinkKafkaConsumer011<String>("sensor",new SimpleStringSchema(),properties));
+        DataStream<String> sourceStream = env.addSource(new FlinkKafkaConsumer<String>("test",new SimpleStringSchema(),properties));
         // 打印输出
         sourceStream.print();
         // 提交执行

@@ -15,6 +15,8 @@ import java.util.Random;
  * @Author saya
  * @Date: 2022/1/29 09:42
  * @Description:
+ * 这里要注意的是 SourceFunction 接口定义的数据源，并行度只能设置为 1，
+ * 如果数据源设置为大于 1 的并行度，则会抛出异常
  */
 
 public class DiySensorSource implements SourceFunction<SensorReading> {
@@ -26,7 +28,7 @@ public class DiySensorSource implements SourceFunction<SensorReading> {
         Random random = new Random();
         Map<String, Double> sensorMap = new HashMap<String, Double>();
         for (int i = 0; i < 10;i++){
-            // 第一次生成传感器温度，并指定温度范围（第一次）
+            // 构造传感器
             sensorMap.put("sensor_"+(i+1),60+random.nextGaussian()*20);
         }
         while (running){

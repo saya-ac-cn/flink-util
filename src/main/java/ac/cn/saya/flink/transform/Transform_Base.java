@@ -33,6 +33,10 @@ public class Transform_Base {
                 (MapFunction<String, Integer>) String::length
         );
 
+        // 使用lamba表达式可能因为类型擦除识别不了返回类型，所以需要手动指定
+        //DataStream<Integer> mapStream = sourceStream.map(date -> date.length()).returns(Integer.class)
+
+
         // flatMap
 //        DataStream<String> flatMapStream = sourceStream.flatMap((FlatMapFunction<String, String>) (val, collector) -> {
 //            // 对本行的数据进行一次按，切割
@@ -41,18 +45,14 @@ public class Transform_Base {
 //                collector.collect(field);
 //            }
 //        });
-        DataStream<String> flatMapStream = sourceStream.flatMap(new FlatMapFunction<String,
-                String>() {
-            @Override
-            public void flatMap(String value, Collector<String> out) throws Exception {
-                String[] fields = value.split(",");
-                for( String field: fields ){
-                    out.collect(field);
-                }
+        DataStream<String> flatMapStream = sourceStream.flatMap((FlatMapFunction<String, String>) (value, out) -> {
+            String[] fields = value.split(",");
+            for( String field: fields ){
+                out.collect(field);
             }
-        });
+        }).returns(String.class);
 
-        // filter过滤
+        // filter过滤(使用lamb表达式可以不用写返回类型，因为就不存在类型的转换，只是过滤判断)
         DataStream<String> filterStream = sourceStream.filter((FilterFunction<String>) (val)-> val.startsWith("sensor_1"));
 
         // 打印输出

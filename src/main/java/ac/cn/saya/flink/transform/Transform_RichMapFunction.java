@@ -53,6 +53,9 @@ class DiyRichMapFunction extends RichMapFunction<SensorReading, Tuple2<String,Do
         return new Tuple2<>(val.getId(), val.getTemperature());
     }
 
+    /**
+     * 只要任务一旦创建就会执行
+     */
     @Override
     public void open(Configuration parameters) throws Exception {
         System.out.println("打开数据库连接");

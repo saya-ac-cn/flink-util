@@ -14,17 +14,17 @@ public class SensorReading {
     /**
      * 传感器id
      */
-    private String id;
+    public String id;
 
     /**
      * 上报时间
      */
-    private Long timestamp;
+    public Long timestamp;
 
     /**
      * 温度
      */
-    private Double temperature;
+    public Double temperature;
 
     public SensorReading() {
     }
