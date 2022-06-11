@@ -16,6 +16,7 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
 /**
+ * 计算传感器的平均温度
  * @Title: Test_CountWindow
  * @ProjectName flink-util
  * @Description: TODO
