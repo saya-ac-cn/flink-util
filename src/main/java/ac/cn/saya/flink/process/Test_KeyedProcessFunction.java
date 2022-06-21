@@ -49,7 +49,8 @@ class DiyProcess extends KeyedProcessFunction<Tuple,SensorReading,Integer>{
         //ctx.output();
         ctx.timerService().currentProcessingTime();
         ctx.timerService().currentWatermark();
-        ctx.timerService().registerProcessingTimeTimer(ctx.timerService().currentProcessingTime());
+        // 注册一个10m后的定时器
+        ctx.timerService().registerProcessingTimeTimer(ctx.timerService().currentProcessingTime()+1000l*10);
         ctx.timerService().registerEventTimeTimer((value.getTimestamp()+10)*1000);
         ctx.timerService().deleteProcessingTimeTimer(10000L);
     }
